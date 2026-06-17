@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - '5432:5432'
+    networks:
+      - agile_network
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    volumes:
+      - django_staticfiles:/app/staticfiles
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - agile_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    volumes:
+      - django_staticfiles:/usr/share/nginx/html/static:ro
+    ports:
+      - '80:8080'
+    environment:
+      - VITE_API_URL=http://web:8000
+    depends_on:
+      - web
+    networks:
+      - agile_network
+
+volumes:
+  postgres_data:
+  django_staticfiles:
+
+networks:
+  agile_network:
+    driver: bridge
