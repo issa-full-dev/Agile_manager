@@ -17,6 +17,8 @@ services:
       - agile_network
 
   web:
+    # 1. On donne le nom de l'image sur Docker Hub + le dossier local de build pour GitHub
+    image: ${DOCKERHUB_USERNAME}/agile_manager-web:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -33,15 +35,19 @@ services:
       - agile_network
 
   frontend:
+    # 2. Pareil pour le frontend
+    image: ${DOCKERHUB_USERNAME}/agile_manager-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
     volumes:
       - django_staticfiles:/usr/share/nginx/html/static:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - '80:8080'
+      - '443:8443'
     environment:
-      - VITE_API_URL=http://web:8000
+      - VITE_API_URL=https://agilemanager.duckdns.org
     depends_on:
       - web
     networks:

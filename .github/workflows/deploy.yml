@@ -1,0 +1,80 @@
+name: CI/CD Pipeline - Agile Manager
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  # ÉTAPE 1 : Exécuter les tests Django automatisés
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Pipenv
+        run: pip install pipenv
+
+      - name: Install dependencies and Run tests
+        run: |
+          cd backend
+          pipenv install --system --deploy
+          python manage.py test
+
+  # ÉTAPE 2 : Compiler et envoyer les nouvelles images sur Docker Hub (uniquement si les tests passent !)
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agile_manager-web:latest
+
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agile_manager-frontend:latest
+
+  # ÉTAPE 3 : Se connecter en SSH sur AWS EC2 pour mettre à jour et relancer
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH Connection and Deploy
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/Agile_manager
+            # Récupérer les nouveaux fichiers de config de l'hôte (ex: nginx.conf, docker-compose.prod.yml)
+            git pull origin main || git pull origin master
+            # Se connecter à Docker Hub pour télécharger vos nouvelles images
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            # Télécharger les nouvelles images construites par GitHub
+            docker compose -f docker-compose.prod.yml pull
+            # Relancer les conteneurs mis à jour en tâche de fond
+            docker compose -f docker-compose.prod.yml up -d
