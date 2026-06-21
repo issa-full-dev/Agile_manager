@@ -23,6 +23,8 @@ jobs:
         run: pip install pipenv
 
       - name: Install dependencies and Run tests
+        env:
+          DJANGO_SECRET_KEY: "django-insecure-github-actions-test-key-12345"
         run: |
           cd backend
           pipenv install --system --skip-lock
