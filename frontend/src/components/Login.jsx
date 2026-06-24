@@ -36,7 +36,7 @@ const Login = () => {
                     Connexion à AgileManager
                 </h2>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6 mb-6">
                     {error && (
                         <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-200">
                             {error}
@@ -75,6 +75,13 @@ const Login = () => {
                         {loading ? 'Connexion en cours...' : 'Se connecter'}
                     </button>
                 </form>
+
+                <div className="text-center text-sm text-gray-600">
+                    Pas encore de compte ?{' '}
+                    <a href="/register" className="text-blue-600 hover:underline font-medium">
+                        S'inscrire
+                    </a>
+                </div>
             </div>
         </div>
     );

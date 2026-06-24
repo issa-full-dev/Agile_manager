@@ -1,6 +1,22 @@
 import api from '../api/axios'; // On importe votre instance configurée
 
 export const authService = {
+    // Fonction pour s'inscrire
+    register: async (username, email, password) => {
+        try {
+            // Nettoyer d'éventuels anciens tokens expirés du stockage local
+            // pour éviter que Django ne bloque la requête publique avec une erreur 401 (token invalide)
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('username');
+
+            const response = await api.post('register/', { username, email, password });
+            return response.data;
+        } catch (error) {
+            throw error.response ? error.response.data : new Error("Serveur injoignable");
+        }
+    },
+
     // Fonction pour se connecter
     login: async (username, password) => {
         try {

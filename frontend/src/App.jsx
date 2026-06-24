@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
+import Register from './components/Register'; // Importation de l'inscription
 import Dashboard from './components/Dashboard'; // On importe le nouveau Dashboard
 import { authService } from './services/authService';
 
@@ -13,8 +14,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Route publique : La page de connexion */}
+        {/* Routes publiques */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Route protégée : Le Dashboard gère maintenant Projets ET Tâches */}
         <Route
