@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Clock, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'; // Des icônes pour le style
 import { taskService } from '../services/taskService';
 
@@ -27,8 +27,8 @@ const TaskList = ({ tasks = [], loading, onTaskUpdated, onTaskDeleted}) => {
         if (onTaskUpdated) {
             onTaskUpdated(updatedTask);
         }
-    } catch (err) {
-        console.error("Erreur lors du changement de statut:", err);
+    } catch (error) {
+        console.error("Erreur lors du changement de statut:", error);
         alert("Impossible de modifier le statut");
     }
 
@@ -39,7 +39,8 @@ const TaskList = ({ tasks = [], loading, onTaskUpdated, onTaskDeleted}) => {
             try {
                 await taskService.deleteTask(taskId);
                 onTaskDeleted(taskId); // On prévient le Dashboard pour l'enlever de l'écran
-            } catch (err) {
+            } catch (error) {
+                console.error("Erreur lors de la suppression", error);
                 alert("Erreur lors de la suppression");
             }
         }

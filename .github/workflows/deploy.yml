@@ -5,9 +5,13 @@ on:
     branches:
       - main
       - master
+  pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
-  # ÉTAPE 1 : Exécuter les tests Django automatisés
+  # ÉTAPE 1 : Exécuter les tests Django automatisés (tourne sur push ET sur PR)
   test:
     runs-on: ubuntu-latest
     steps:
@@ -30,9 +34,10 @@ jobs:
           pipenv install --system --skip-lock
           python manage.py test
 
-  # ÉTAPE 2 : Compiler et envoyer les nouvelles images sur Docker Hub (uniquement si les tests passent !)
+  # ÉTAPE 2 : Build & push — uniquement si tests OK ET si c'est un push réel (pas une PR)
   build-and-push:
     needs: test
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -59,9 +64,10 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/agile_manager-frontend:latest
 
-  # ÉTAPE 3 : Se connecter en SSH sur AWS EC2 pour mettre à jour et relancer
+  # ÉTAPE 3 : Déploiement — uniquement si build-and-push a tourné (donc uniquement sur push réel)
   deploy:
     needs: build-and-push
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: SSH Connection and Deploy
@@ -72,11 +78,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/Agile_manager
-            # Récupérer les nouveaux fichiers de config de l'hôte (ex: nginx.conf, docker-compose.prod.yml)
             git pull origin main || git pull origin master
-            # Se connecter à Docker Hub pour télécharger vos nouvelles images
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            # Télécharger les nouvelles images construites par GitHub
             docker compose -f docker-compose.prod.yml pull
-            # Relancer les conteneurs mis à jour en tâche de fond
             docker compose -f docker-compose.prod.yml up -d

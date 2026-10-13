@@ -4,7 +4,7 @@ import { Folder, ChevronRight, Plus } from 'lucide-react';
 // 1. IMPORTATION CORRECTE : On importe le formulaire de Projet, pas de Tâche
 import ProjectForm from './ProjectForm';
 
-const ProjectList = ({ onSelectProject }) => {
+const ProjectList = ({ onSelectProject, refreshKey = 0 }) => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -21,10 +21,10 @@ const ProjectList = ({ onSelectProject }) => {
             }
         };
         fetchProjects();
-    }, []);
+    }, [refreshKey]);
 
     const handleProjectCreated = (newProject) => {
-        setProjects([newProject, ...projects]);
+        setProjects((prevProjects) => [newProject, ...prevProjects]);
         setShowForm(false);
     }
 

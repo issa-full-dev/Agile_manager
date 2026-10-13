@@ -11,11 +11,7 @@ export const projectService = {
     },
     // Dans src/services/projectService.js
     deleteProject: async (projectId) => {
-        try {
-            await api.delete(`projects/${projectId}/`);
-            return true;
-        } catch (error) {
-            throw error;
-        }
+        await api.delete(`projects/${projectId}/`);
+        return true;
     }
 };
