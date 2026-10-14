@@ -42,7 +42,14 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
             setDescription('');
             setReminderEnabled(false);
         } catch (err) {
-            const serverMessage = err?.response?.data?.detail || err?.response?.data?.non_field_errors?.[0] || "Erreur lors de l'ajout";
+            const responseData = err?.response?.data;
+            const fieldMessage = responseData && typeof responseData === 'object'
+                ? Object.entries(responseData)
+                    .filter(([key]) => key !== 'detail' && key !== 'non_field_errors')
+                    .map(([, messages]) => Array.isArray(messages) ? messages[0] : messages)
+                    .find((message) => typeof message === 'string' && message.length > 0)
+                : undefined;
+            const serverMessage = responseData?.detail || responseData?.non_field_errors?.[0] || fieldMessage || "Erreur lors de l'ajout";
             setError(serverMessage);
         }
     };
