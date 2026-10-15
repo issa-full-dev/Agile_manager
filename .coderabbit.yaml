@@ -1,0 +1,27 @@
+language: "fr"
+reviews:
+  profile: chill
+  request_changes_threshold: major
+  high_level_summary: true
+  review_status: true
+  poem: false
+  path_instructions:
+    - path: "backend/**/*.py"
+      instructions: |
+        - Respect Django project conventions and Python best practices.
+        - Check for security issues, validation errors, and unsafe database queries.
+        - Ensure serializers, views, and models remain consistent and maintainable.
+    - path: "frontend/src/**/*.{js,jsx}"
+      instructions: |
+        - Follow React and Vite best practices.
+        - Validate state management, hooks usage, and API error handling.
+        - Prefer clear and readable component logic with minimal duplication.
+    - path: "**/*.md"
+      instructions: |
+        - Keep the documentation concise, clear, and aligned with the repository’s purpose.
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+      - develop

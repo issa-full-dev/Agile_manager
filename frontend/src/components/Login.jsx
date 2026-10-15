@@ -16,7 +16,7 @@ const Login = () => {
             await authService.login(formData.username, formData.password);
             // Si ça réussit, on recharge pour rediriger (on fera mieux avec React Router après)
             window.location.href = '/';
-        } catch (err) {
+        } catch {
             setError('Identifiants invalides ou serveur hors ligne.');
         } finally {
             setLoading(false);

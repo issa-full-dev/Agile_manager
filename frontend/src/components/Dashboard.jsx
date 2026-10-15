@@ -11,6 +11,7 @@ const Dashboard = () => {
     const [selectedProject, setSelectedProject] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [loadingTasks, setLoadingTasks] = useState(false);
+    const [projectRefreshKey, setProjectRefreshKey] = useState(0);
 
 
     // Fonction pour entrer dans un projet et met à jour la variable selectedProject
@@ -20,8 +21,8 @@ const Dashboard = () => {
         try {
             const data = await taskService.getAllTasks(project.id);
             setTasks(data);
-        } catch (err) {
-            console.error("Erreur chargement tâches", err);
+        } catch (error) {
+            console.error("Erreur chargement tâches", error);
         } finally {
             setLoadingTasks(false);
         }
@@ -33,8 +34,9 @@ const Dashboard = () => {
             try {
                 await projectService.deleteProject(projectId);
                 setSelectedProject(null); // Retour à la liste des projets
-            }
-            catch (err) {
+                setProjectRefreshKey((prev) => prev + 1);
+            } catch (error) {
+                console.error("Erreur lors de la suppression du projet", error);
                 alert("Erreur lors de la suppression du projet");
             }
         }
@@ -42,12 +44,16 @@ const Dashboard = () => {
 
     // Fonction pour mettre une tache à jour(changer son statut)
     const handleTaskUpdated = (updatedTask) => {
-    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+        setTasks((prevTasks) => prevTasks.map((t) => t.id === updatedTask.id ? updatedTask : t));
     };
 
     // Fonction pour supprimer une tache
     const handleTaskDeleted = (taskId) => {
-    setTasks(tasks.filter(t => t.id !== taskId));
+        setTasks((prevTasks) => prevTasks.filter((t) => t.id !== taskId));
+    };
+
+    const handleTaskCreated = (newTask) => {
+        setTasks((prevTasks) => [newTask, ...prevTasks]);
     };
 
 
@@ -85,7 +91,7 @@ const Dashboard = () => {
                         {/* On réutilise vos composants TaskForm et TaskList */}
                         <TaskForm
                             projectId={selectedProject.id}
-                            onTaskCreated={(newTask) => setTasks([newTask, ...tasks])}
+                            onTaskCreated={handleTaskCreated}
                         />
 
                         <TaskList
@@ -95,7 +101,10 @@ const Dashboard = () => {
                         onTaskDeleted={handleTaskDeleted} />
                     </div>
                 ) : (
-                    <ProjectList onSelectProject={handleSelectProject} />
+                    <ProjectList
+                        onSelectProject={handleSelectProject}
+                        refreshKey={projectRefreshKey}
+                    />
                 )}
             </main>
         </div>

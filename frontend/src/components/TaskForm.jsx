@@ -7,6 +7,7 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
     const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [error, setError] = useState('');
 
     // On initialise la date à "demain" par défaut pour éviter le retard immédiat
     const tomorrow = new Date();
@@ -14,15 +15,25 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
     tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
     const [dueDate, setDueDate] = useState(tomorrow.toISOString().slice(0, 16));
 
+    const trimmedTitle = title.trim();
+    const isValid = trimmedTitle.length > 0 && dueDate;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!isValid) {
+            setError('Le titre et la date d’échéance sont obligatoires.');
+            return;
+        }
+
         try {
+            setError('');
             const newTask = await taskService.createTask({
-                title,
-                description,
+                title: trimmedTitle,
+                description: description.trim(),
                 priority,
                 project: projectId,
-                due_date: dueDate, // On envoie la date choisie par l'utilisateur
+                due_date: dueDate,
                 reminder_enabled: reminderEnabled
             });
 
@@ -30,19 +41,35 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
             setTitle('');
             setDescription('');
             setReminderEnabled(false);
-            } catch (err) {
-                alert("Erreur lors de l'ajout");
-            }
-        };
+        } catch (err) {
+            const responseData = err?.response?.data;
+            const fieldMessage = responseData && typeof responseData === 'object'
+                ? Object.entries(responseData)
+                    .filter(([key]) => key !== 'detail' && key !== 'non_field_errors')
+                    .map(([, messages]) => Array.isArray(messages) ? messages[0] : messages)
+                    .find((message) => typeof message === 'string' && message.length > 0)
+                : undefined;
+            const serverMessage = responseData?.detail || responseData?.non_field_errors?.[0] || fieldMessage || "Erreur lors de l'ajout";
+            setError(serverMessage);
+        }
+    };
 
     return (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                    type="text" placeholder="Titre de la tâche" value={title}
-                    onChange={(e) => setTitle(e.target.value)} required
-                    className="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                <div>
+                    <input
+                        type="text" placeholder="Titre de la tâche" value={title}
+                        onChange={(e) => {
+                            setTitle(e.target.value);
+                            if (error) setError('');
+                        }}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    {!isValid && title.length > 0 && (
+                        <p className="mt-1 text-xs text-red-500">Le titre ne peut pas être vide.</p>
+                    )}
+                </div>
 
                 <select
                     value={priority} onChange={(e) => setPriority(e.target.value)}
@@ -61,7 +88,10 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
                     <input
                         type="datetime-local"
                         value={dueDate}
-                        onChange={(e) => setDueDate(e.target.value)}
+                        onChange={(e) => {
+                            setDueDate(e.target.value);
+                            if (error) setError('');
+                        }}
                         required
                         className="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     />
@@ -89,7 +119,17 @@ const TaskForm = ({ onTaskCreated, projectId }) => {
                 </div>
             </div>
 
-            <button type="submit" className="mt-4 flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-bold shadow-md">
+            {error && (
+                <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                    {error}
+                </p>
+            )}
+
+            <button
+                type="submit"
+                disabled={!isValid}
+                className="mt-4 flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-bold shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
                 <PlusCircle size={18} /> Créer la tâche
             </button>
         </form>

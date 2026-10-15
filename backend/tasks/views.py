@@ -39,10 +39,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         project = serializer.validated_data['project']
         if project.owner != self.request.user:
             raise PermissionDenied("Vous ne pouvez pas ajouter une tâche à ce projet.")
-        serializer.save()
 
-    def perform_create(self, serializer):
         task = serializer.save()
+
         if task.priority == 'HIGH':
             send_mail(
                 f'Nouvelle tâche critique : {task.title}',
